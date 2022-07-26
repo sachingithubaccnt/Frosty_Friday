@@ -1,0 +1,307 @@
+use database frosty_friday;
+
+create schema Week_6_Hard;
+
+ create or replace file format Frosty_Friday_Challenges.Week_6_Hard.csv_format
+                    type = csv
+                    skip_header = 1
+                    null_if = ('NULL', 'null')
+                    field_optionally_enclosed_by = '"'
+                    empty_field_as_null = true;
+
+## We got the error while ingesting the Westminister file
+## Numeric value 'Carrick and Cumnock"' is not recognized
+## This was the erro because there is data in file like  Ayr, Carrick and Cumnock
+## HEnce we included field_optionally_enclosed_by = '"' in fileformat
+
+                    
+
+-- Create stage 
+create or replace stage challenge_6_stage
+  url = 's3://frostyfridaychallenges/challenge_6/'
+  file_format = Frosty_Friday_Challenges.Week_6_Hard.csv_format;
+;
+
+list @challenge_6_stage/
+
+
+create or replace table NATIONS_AND_REGIONS_DETAILS (
+   NATION_OR_REGION_NAME VARCHAR(100)
+  , TYPE VARCHAR(100)
+  , SEQ NUMBER
+  , LONGITUDE FLOAT
+  , LATITUDE FLOAT
+  , PART NUMBER
+)
+
+COPY INTO NATIONS_AND_REGIONS_DETAILS
+FROM (
+  select 
+      $1::string as NATION_OR_REGION_NAME
+    , $2::string as TYPE
+    , $3::NUMBER as SEQ
+    , $4::float as LONGITUDE
+    , $5::float as LATITUDE
+    , $6::NUMBER as PART
+  from @challenge_6_stage/nations_and_regions
+);
+
+SELECT * FROM NATIONS_AND_REGIONS_DETAILS
+
+
+create or replace table WESTMINSTER_CONSTITUENCY_DETAILS (
+   CONSTITUENCY STRING
+  , SEQ NUMBER
+  , LONGITUDE FLOAT
+  , LATITUDE FLOAT
+  , PART NUMBER
+);
+
+-- Ingest the data
+COPY INTO WESTMINSTER_CONSTITUENCY_DETAILS
+FROM (
+  select 
+     $1::string
+    , $2::NUMBER
+    , $3::float
+    , $4::floaT
+    , $5::NUMBER
+  from @challenge_6_stage/westminster_constituency_points);
+
+SELECT *
+FROM WESTMINSTER_CONSTITUENCY_DETAILS where constiTUENCY LIKE 'Ayr, Carrick and Cumnock'
+
+alter session set geography_output_format = 'WKT';
+
+SELECT NATION_OR_REGION_NAME
+  , TYPE
+  , SEQ
+  , PART
+  , ST_MAKEPOINT( LONGITUDE, LATITUDE ) FROM NATIONS_AND_REGIONS_DETAILS
+  WHERE SEQ = 0
+  
+SELECT 
+    NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , ST_COLLECT(ST_MAKEPOINT( LONGITUDE, LATITUDE )) FROM NATIONS_AND_REGIONS_DETAILS
+  WHERE SEQ != 0
+  group by
+      NATION_OR_REGION_NAME
+    , TYPE
+    , PART;
+    
+--I have used the below sql where I am sequencing the Data in first part of CTE and it is working fine if I check for particular Region like Scotland,SouthWest etc.
+--but when I execute the query for complete dataset I am getting the error    
+--Geography validation failed: Edge (-5.600713,50.193333) -- (-1.498313,51.329379) crosses edge (-1.948982,50.982988) -- (-5.538661,50.216346)
+
+/* with ALL_POINTS_IN_ORDER AS
+ (
+   select 
+    NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , SEQ
+  , ST_MAKEPOINT( LONGITUDE, LATITUDE ) as GEO_POINT 
+   FROM NATIONS_AND_REGIONS_DETAILS 
+   ORDER BY
+   NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , SEQ
+ ),
+  START_POINT as (
+  select 
+      NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , SEQ
+  ,GEO_POINT as START_INFO
+  --, ST_MAKEPOINT( LONGITUDE, LATITUDE ) START_INFO
+   FROM ALL_POINTS_IN_ORDER 
+  WHERE SEQ = 0 AND NATION_OR_REGION_NAME IN('South West','South East')
+)
+, TARGET_POINT as (
+  SELECT 
+    NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  --, ST_COLLECT(ST_MAKEPOINT( LONGITUDE, LATITUDE )) TARGET_INFO
+  , ST_COLLECT(GEO_POINT) as TARGET_INFO
+  FROM ALL_POINTS_IN_ORDER
+  WHERE SEQ != 0 AND NATION_OR_REGION_NAME IN('South West','South East')
+  group by
+      NATION_OR_REGION_NAME
+    , TYPE
+    , PART
+)
+SELECT 
+S.NATION_OR_REGION_NAME
+  , S.TYPE
+  , S.SEQ
+  , S.PART
+  , ST_MAKEPOLYGON(ST_MAKELINE(S.START_INFO,T.TARGET_INFO )) as POLYGON
+  FROM START_POINT S,TARGET_POINT T
+  WHERE S.NATION_OR_REGION_NAME = T.NATION_OR_REGION_NAME
+  AND S.TYPE = T.TYPE
+  AND S.PART= T.PART;*/
+  
+
+-- Follow  ChrisHastie approach to  create the table with ordering of Points
+  create or replace table ALL_POINTS_IN_ORDER
+as
+select 
+    NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , SEQ
+  , ST_MAKEPOINT( LONGITUDE, LATITUDE ) as GEO_POINT
+from NATIONS_AND_REGIONS_DETAILS
+order by
+    NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , SEQ
+;
+
+--Instead of creating the table, develop the sql and calculate the FINAL POLYGON for Nations
+SELECT NATION_OR_REGION_NAME,TYPE,ST_COLLECT(POLYGON) NATION_FINAL_POLYGON FROM (
+WITH  START_POINT as (
+  select 
+      NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , SEQ
+  , GEO_POINT as START_INFO
+   FROM ALL_POINTS_IN_ORDER 
+  WHERE SEQ = 0 --AND NATION_OR_REGION_NAME = 'Scotland'
+)
+, TARGET_POINT as (
+  SELECT 
+    NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , ST_COLLECT(GEO_POINT) TARGET_INFO
+  FROM ALL_POINTS_IN_ORDER
+  WHERE SEQ != 0 --AND NATION_OR_REGION_NAME = 'Scotland' 
+  group by
+      NATION_OR_REGION_NAME
+    , TYPE
+    , PART
+)
+SELECT 
+S.NATION_OR_REGION_NAME
+  , S.TYPE
+  , S.SEQ
+  , S.PART
+  , ST_MAKEPOLYGON(ST_MAKELINE(S.START_INFO,T.TARGET_INFO )) as POLYGON
+  FROM START_POINT S,TARGET_POINT T
+  WHERE S.NATION_OR_REGION_NAME = T.NATION_OR_REGION_NAME
+  AND S.TYPE = T.TYPE
+  AND S.PART= T.PART)
+  GROUP BY NATION_OR_REGION_NAME,TYPE
+
+
+=====================
+
+
+create or replace table WESTMINSTER_CONSTITUENCY_ALL_POINTS_IN_ORDER
+as
+select 
+    CONSTITUENCY
+  , PART
+  , SEQ
+  , ST_MAKEPOINT( LONGITUDE, LATITUDE ) as GEO_POINT
+from WESTMINSTER_CONSTITUENCY_DETAILS
+order by
+    CONSTITUENCY
+  , PART
+  , SEQ
+;
+
+--Instead of creating the table, develop the sql and calculate the FINAL POLYGON for CONSTITUENCY
+
+SELECT CONSTITUENCY,ST_COLLECT(POLYGON) AS CONSTITUENCY_FINAL_POLYGON FROM (
+WITH  START_POINT as (
+  select 
+      CONSTITUENCY,PART,GEO_POINT as START_INFO
+   FROM WESTMINSTER_CONSTITUENCY_ALL_POINTS_IN_ORDER  WHERE SEQ = 0 
+),
+TARGET_POINT as (
+  SELECT 
+    CONSTITUENCY,PART, ST_COLLECT(GEO_POINT) TARGET_INFO
+  FROM WESTMINSTER_CONSTITUENCY_ALL_POINTS_IN_ORDER WHERE SEQ != 0 
+  group by CONSTITUENCY, PART
+)
+SELECT 
+S.CONSTITUENCY,S.PART,ST_MAKEPOLYGON(ST_MAKELINE(S.START_INFO,T.TARGET_INFO )) as POLYGON
+  FROM START_POINT S,TARGET_POINT T
+  WHERE S.CONSTITUENCY = T.CONSTITUENCY
+  AND S.PART= T.PART)
+  GROUP BY CONSTITUENCY
+  
+-- Create the Final View and calculating the Intersection records
+
+create or replace TABLE	INTERSECTING_CONSTITUENCIES
+as
+SELECT A.NATION_OR_REGION_NAME, COUNT(B.CONSTITUENCY) as INTERSECTING_CONSTITUENCIES 
+FROM 
+
+(SELECT NATION_OR_REGION_NAME,TYPE,ST_COLLECT(POLYGON) AS NATION_FINAL_POLYGON FROM (
+WITH  START_POINT as (
+  select 
+      NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , SEQ
+  , GEO_POINT as START_INFO
+   FROM ALL_POINTS_IN_ORDER 
+  WHERE SEQ = 0 --AND NATION_OR_REGION_NAME = 'Scotland'
+)
+, TARGET_POINT as (
+  SELECT 
+    NATION_OR_REGION_NAME
+  , TYPE
+  , PART
+  , ST_COLLECT(GEO_POINT) TARGET_INFO
+  FROM ALL_POINTS_IN_ORDER
+  WHERE SEQ != 0 --AND NATION_OR_REGION_NAME = 'Scotland' 
+  group by
+      NATION_OR_REGION_NAME
+    , TYPE
+    , PART
+)
+SELECT 
+S.NATION_OR_REGION_NAME
+  , S.TYPE
+  , S.SEQ
+  , S.PART
+  , ST_MAKEPOLYGON(ST_MAKELINE(S.START_INFO,T.TARGET_INFO )) as POLYGON
+  FROM START_POINT S,TARGET_POINT T
+  WHERE S.NATION_OR_REGION_NAME = T.NATION_OR_REGION_NAME
+  AND S.TYPE = T.TYPE
+  AND S.PART= T.PART)
+  GROUP BY NATION_OR_REGION_NAME,TYPE) A,
+  
+ (SELECT CONSTITUENCY,ST_COLLECT(POLYGON) AS CONSTITUENCY_FINAL_POLYGON FROM (
+WITH  START_POINT as (
+  select 
+      CONSTITUENCY,PART,GEO_POINT as START_INFO
+   FROM WESTMINSTER_CONSTITUENCY_ALL_POINTS_IN_ORDER  WHERE SEQ = 0 
+),
+TARGET_POINT as (
+  SELECT 
+    CONSTITUENCY,PART, ST_COLLECT(GEO_POINT) TARGET_INFO
+  FROM WESTMINSTER_CONSTITUENCY_ALL_POINTS_IN_ORDER WHERE SEQ != 0 
+  group by CONSTITUENCY, PART
+)
+SELECT 
+S.CONSTITUENCY,S.PART,ST_MAKEPOLYGON(ST_MAKELINE(S.START_INFO,T.TARGET_INFO )) as POLYGON
+  FROM START_POINT S,TARGET_POINT T
+  WHERE S.CONSTITUENCY = T.CONSTITUENCY
+  AND S.PART= T.PART)
+  GROUP BY CONSTITUENCY)B
+  
+  WHERE ST_INTERSECTS(A.NATION_FINAL_POLYGON, B.CONSTITUENCY_FINAL_POLYGON)
+group by
+    NATION_OR_REGION_NAME
