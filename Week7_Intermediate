@@ -1,0 +1,156 @@
+-- Create Database
+create or replace database FF_WEEK_7;
+create or replace warehouse compute_wh with warehouse_size='X-SMALL';
+use database FF_WEEK_7;
+
+-- Create Schemas
+create schema super_weapons;
+create schema super_monsters;
+create schema super_villains;
+
+-- Create Tables and Mock data
+create or replace table super_villains.villain_information (
+	id INT,
+	first_name VARCHAR(50),
+	last_name VARCHAR(50),
+	email VARCHAR(50),
+	Alter_Ego VARCHAR(50)
+);
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (1, 'Chrissy', 'Riches', 'criches0@ning.com', 'Waterbuck, defassa');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (2, 'Libbie', 'Fargher', 'lfargher1@vistaprint.com', 'Ibis, puna');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (3, 'Becka', 'Attack', 'battack2@altervista.org', 'Falcon, prairie');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (4, 'Euphemia', 'Whale', 'ewhale3@mozilla.org', 'Egyptian goose');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (5, 'Dixie', 'Bemlott', 'dbemlott4@moonfruit.com', 'Eagle, long-crested hawk');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (6, 'Giffard', 'Prendergast', 'gprendergast5@odnoklassniki.ru', 'Armadillo, seven-banded');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (7, 'Esmaria', 'Anthonies', 'eanthonies6@biblegateway.com', 'Cat, european wild');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (8, 'Celine', 'Fotitt', 'cfotitt7@baidu.com', 'Clark''s nutcracker');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (9, 'Leopold', 'Axton', 'laxton8@mac.com', 'Defassa waterbuck');
+insert into super_villains.villain_information (id, first_name, last_name, email, Alter_Ego) values (10, 'Tadeas', 'Thorouggood', 'tthorouggood9@va.gov', 'Armadillo, nine-banded');
+
+create or replace table super_monsters.monster_information (
+	id INT,
+	monster VARCHAR(50),
+	hideout_location VARCHAR(50)
+);
+insert into super_monsters.monster_information (id, monster, hideout_location) values (1, 'Northern elephant seal', 'Huangban');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (2, 'Paddy heron (unidentified)', 'Várzea Paulista');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (3, 'Australian brush turkey', 'Adelaide Mail Centre');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (4, 'Gecko, tokay', 'Tafí Viejo');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (5, 'Robin, white-throated', 'Turośń Kościelna');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (6, 'Goose, andean', 'Berezovo');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (7, 'Puku', 'Mayskiy');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (8, 'Frilled lizard', 'Fort Lauderdale');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (9, 'Yellow-necked spurfowl', 'Sezemice');
+insert into super_monsters.monster_information (id, monster, hideout_location) values (10, 'Agouti', 'Najd al Jumā‘ī');
+
+create table super_weapons.weapon_storage_location (
+	id INT,
+	created_by VARCHAR(50),
+	location VARCHAR(50),
+	catch_phrase VARCHAR(50),
+	weapon VARCHAR(50)
+);
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (1, 'Ullrich-Gerhold', 'Mazatenango', 'Assimilated object-oriented extranet', 'Fintone');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (2, 'Olson-Lindgren', 'Dvorichna', 'Switchable demand-driven knowledge user', 'Andalax');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (3, 'Rodriguez, Flatley and Fritsch', 'Palmira', 'Persevering directional encoding', 'Toughjoyfax');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (4, 'Conn-Douglas', 'Rukem', 'Robust tangible Graphical User Interface', 'Flowdesk');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (5, 'Huel, Hettinger and Terry', 'Bulawin', 'Multi-channelled radical knowledge user', 'Y-Solowarm');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (6, 'Torphy, Ritchie and Lakin', 'Wang Sai Phun', 'Self-enabling client-driven project', 'Alphazap');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (7, 'Carroll and Sons', 'Digne-les-Bains', 'Profound radical benchmark', 'Stronghold');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (8, 'Hane, Breitenberg and Schoen', 'Huangbu', 'Function-based client-server encoding', 'Asoka');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (9, 'Ledner and Sons', 'Bukal Sur', 'Visionary eco-centric budgetary management', 'Ronstring');
+insert into super_weapons.weapon_storage_location (id, created_by, location, catch_phrase, weapon) values (10, 'Will-Thiel', 'Zafar', 'Robust even-keeled algorithm', 'Tin');
+
+
+--Create Tags
+create or replace tag security_class comment = 'sensitive data';
+
+
+--Apply tags
+alter table super_villains.villain_information set tag security_class = 'Level Super Secret A+++++++';
+alter table super_monsters.monster_information set tag security_class = 'Level B';
+alter table super_weapons.weapon_storage_location set tag security_class = 'Level Super Secret A+++++++';
+
+
+--Create Roles
+create role villian;
+create role monster;
+create role weapon;
+
+--Assign Roles to yourself with all needed privileges
+grant role villian to role accountadmin;
+grant USAGE  on warehouse compute_wh to role villian;
+grant usage on database ff_week_7 to role villian;
+grant usage on all schemas in database ff_week_7 to role villian;
+grant select on all tables in database ff_week_7 to role villian;
+
+grant role monster to role accountadmin;
+grant USAGE  on warehouse compute_wh to role monster;
+grant usage on database ff_week_7 to role monster;
+grant usage on all schemas in database ff_week_7 to role monster;
+grant select on all tables in database ff_week_7 to role monster;
+
+grant role weapon to role accountadmin;
+grant USAGE  on warehouse compute_wh to role weapon;
+grant usage on database ff_week_7 to role weapon;
+grant usage on all schemas in database ff_week_7 to role weapon;
+grant select on all tables in database ff_week_7 to role weapon;
+
+--Queries to build history
+use role villian;
+use database FF_WEEK_7;
+select * from super_villains.villain_information;
+
+use role monster;
+use database FF_WEEK_7;
+select * from super_monsters.monster_information;
+
+use role weapon;
+use database FF_WEEK_7;
+select * from super_weapons.weapon_storage_location;
+
+WITH ACCESS_HIST AS (
+select obj.value:objectName::string TableName,user_name, count(*) uses
+       from snowflake.account_usage.access_history A
+    , table(flatten(base_objects_accessed)) obj
+  WHERE TABLENAME in('FF_WEEK_7.SUPER_VILLAINS.VILLAIN_INFORMATION','FF_WEEK_7.SUPER_MONSTERS.MONSTER_INFORMATION','FF_WEEK_7.SUPER_WEAPONS.WEAPON_STORAGE_LOCATION')
+group by TableName,user_name),
+ACCESS_COL AS
+(
+select obj.value:objectName::string colTableName,objCOL.value:columnName::varchar accessed_column,query_start_time::timestamp query_start_time,QUERY_ID
+from snowflake.account_usage.access_history 
+    , table(flatten(base_objects_accessed)) obj 
+    , table(flatten(obj.value:columns)) objCOL 
+    WHERE colTableName IN ('FF_WEEK_7.SUPER_VILLAINS.VILLAIN_INFORMATION','FF_WEEK_7.SUPER_MONSTERS.MONSTER_INFORMATION','FF_WEEK_7.SUPER_WEAPONS.WEAPON_STORAGE_LOCATION')
+  ),
+TBL_COUNT AS
+  ( select TABLE_CATALOG || '.' || table_schema
+       || '.'
+       || table_name AS TBL_NAME,
+       row_count from INFORMATION_SCHEMA.TABLES where table_TYPE = 'BASE TABLE'),
+       
+       QUERY_HIST AS
+  ( select QUERY_ID,ROLE_NAME FROM snowflake.account_usage.query_history),
+       
+TAG_DATA AS
+(
+select object_database||'.'||object_schema||'.'||object_name COMP_TABLE_NAME,column_name,tag_value,LEVEL LVL,TAG_NAME
+    from table (FF_WEEK_7.information_schema.tag_references_all_columns ('FF_WEEK_7.SUPER_VILLAINS.VILLAIN_INFORMATION', 'table'))
+     WHERE tag_name = 'SECURITY_CLASS'and tag_value = 'Level Super Secret A+++++++'
+      UNION
+select object_database||'.'||object_schema||'.'||object_name COMP_TABLE_NAME,column_name,tag_value,LEVEL LVL,TAG_NAME
+    from table (FF_WEEK_7.information_schema.tag_references_all_columns ('FF_WEEK_7.SUPER_MONSTERS.MONSTER_INFORMATION', 'table'))
+           WHERE tag_name = 'SECURITY_CLASS'and tag_value = 'Level Super Secret A+++++++'
+      UNION
+   select object_database||'.'||object_schema||'.'||object_name COMP_TABLE_NAME,column_name,tag_value,LEVEL LVL,TAG_NAME
+    from 
+      table (FF_WEEK_7.information_schema.tag_references_all_columns ('FF_WEEK_7.SUPER_WEAPONS.WEAPON_STORAGE_LOCATION', 'table'))
+           WHERE tag_name = 'SECURITY_CLASS'and tag_value = 'Level Super Secret A+++++++'
+)
+ 
+SELECT TableName,user_name,accessed_column,tag_value,TAG_NAME,ROLE_NAME FROM 
+ACCESS_HIST H,ACCESS_COL C,TBL_COUNT CNT,TAG_DATA T,QUERY_HIST QH
+WHERE H.TableName = C.colTableName AND C.colTableName = CNT.TBL_NAME and CNT.TBL_NAME = T. COMP_TABLE_NAME and T.column_name = C.accessed_column
+and C.QUERY_ID = QH.QUERY_ID
+AND tag_value = 'Level Super Secret A+++++++'
+ORDER BY USES DESC
