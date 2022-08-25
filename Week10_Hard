@@ -1,0 +1,92 @@
+create or replace table small_file
+(
+    date_time datetime,
+    trans_amount double
+);
+
+create or replace table big_file
+(
+    date_time datetime,
+    trans_amount double
+);
+
+create warehouse if not exists xtra_small_wh
+    with warehouse_size = XSMALL
+    auto_suspend = 60;
+    
+create warehouse if not exists small_wh 
+    with warehouse_size = SMALL
+    auto_suspend = 60;
+
+
+-- Create the stage
+create or replace stage week_10_frosty_stage
+    url = 's3://frostyfridaychallenges/challenge_10/'
+    file_format = (skip_header = 1, type = csv)
+    ;
+
+list @week_10_frosty_stage;
+show stages like 'week_10_frosty_stage';
+
+
+select * from small_file
+select * from big_file
+
+
+-- Create the stored procedure
+create or replace procedure dynamic_warehouse_data_load()
+  returns string
+  LANGUAGE JAVASCRIPT
+  execute as caller
+as
+$$
+    var rowCount=0;
+    var cnt = 0;
+    var stmt = "list @week_10_frosty_stage";
+    var xswh = "use warehouse xtra_small_wh";
+    var swh = "use warehouse small_wh";
+    var stg = "s3://frostyfridaychallenges/challenge_10/";
+    try 
+    {
+    var stmt01 = snowflake.createStatement( { sqlText: stmt } );
+    var rs = stmt01.execute();
+    var rowCount = (stmt01.getRowCount()>0) ? stmt01.getRowCount() : 0;
+    while (rs.next()) 
+        {
+            fsize = rs.getColumnValue(2);
+            fname = rs.getColumnValue(1);
+            var small_sql_copy_stmt = "copy into small_file from @week_10_frosty_stage/" + " files = ('" + fname.replace(stg,'') + "')"; 
+            var big_sql_copy_stmt = "copy into big_file from @week_10_frosty_stage/" + " files = ('" + fname.replace(stg,'') + "')"; 
+            //return sql_copy_stmt;
+            //return fsize;
+             if (fsize < 10240) 
+                { 
+                    var xstmt = snowflake.createStatement( { sqlText: xswh } );
+                    var xrs = xstmt.execute();
+                    snowflake.createStatement( {sqlText: small_sql_copy_stmt}).execute(); 
+                    cnt = cnt + 1;
+                }
+                else
+                {
+                   var bstmt = snowflake.createStatement( { sqlText: swh } );
+                    var brs = bstmt.execute();
+                    snowflake.createStatement( {sqlText: big_sql_copy_stmt}).execute(); 
+                    cnt = cnt + 1;
+                }
+        }
+    
+    result = "Total number of files in stage (" + cnt + ")";
+    
+    }
+    
+    catch (err)  {
+        result =  "Failed: Code: " + err.code + "\n  State: " + err.state;
+        result += "\n  Message: " + err.message;
+        result += "\nStack Trace:\n" + err.stackTraceTxt; 
+    }
+    
+    
+    return result;
+$$;
+
+call dynamic_warehouse_data_load()
